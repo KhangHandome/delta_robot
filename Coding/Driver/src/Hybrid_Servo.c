@@ -8,15 +8,15 @@ static uint8_t indexOfServo = 0 ;
 static uint8_t HybridServo_GetInstanceID(HybridServo *servo);
 uint8_t HybridServo_GetInstanceID(HybridServo *servo)
 {
-    uint8_t retVal = 0 ; 
+    uint8_t retVal = 0xff ; 
     uint8_t index  = 0 ; 
     for ( index = 0 ; index < indexOfServo ; index ++ )
     {
         if ( servo->index == myHybridServo[index].index)
         {
-            break ; 
+            retVal = index;
+            index = 0xff;
         }
-        retVal = index;
     }
     return retVal; 
 }
@@ -38,32 +38,33 @@ void HybridServo_Init(HybridServo* servo)
 
 void HybridServo_SetUp(HybridServo* servo) 
 {
+    
     uint8_t instance = 0 ; 
-    myHybridServo[indexOfServo].servo_state = SERVO_STATE_CONFIGURING ;
     // Get the instance of my servo 
     instance = HybridServo_GetInstanceID(servo);
-    // Set hướng quay
-    myHybridServo[instance].speed     = servo->speed ; 
-    myHybridServo[instance].direction = servo->direction ; 
-    myHybridServo[indexOfServo].servo_state = SERVO_STATE_READY ;
-
+    if(instance != 0xff)
+    {
+        myHybridServo[instance].servo_state = SERVO_STATE_CONFIGURING ;
+        // Set hướng quay
+        myHybridServo[instance].speed       = servo->speed ; 
+        myHybridServo[instance].direction   = servo->direction ; 
+        myHybridServo[instance].servo_state = SERVO_STATE_READY ;
+    }
 }
 void HybridServo_Running(void)
 {
     uint8_t counter = 0 ;
     // Cấu hình PWM to setup the speed 
-    HAL_SetPWMFreq(servo->step_pin, freq);
-    HAL_SetPWM(servo->step_pin, 50.0f);  // duty 50%
     for (counter = 0; counter < indexOfServo; counter++)
     {
-        switch (myHybridServo[indexOfServo].servo_state)
+        switch (myHybridServo[counter].servo_state)
         {
             case SERVO_STATE_CONFIGURING:
-                myHybridServo[indexOfServo].servo_state = SERVO_STATE_READY;
+                myHybridServo[counter].servo_state = SERVO_STATE_READY;
                 /* code */
                 break;
             case SERVO_STATE_READY:
-                myHybridServo[indexOfServo].servo_state = SERVO_STATE_ACTIVE;
+                myHybridServo[counter].servo_state = SERVO_STATE_ACTIVE;
                 HAL_SetPWM(myHybridServo[counter].step_pin, 0.0f);
                 if(myHybridServo[counter].direction == Clockwise )
                 {
@@ -80,18 +81,16 @@ void HybridServo_Running(void)
             default:
                 break;
         }
-        /* code */
-        myHybridServo[indexOfServo].servo_state = SERVO_STATE_CONFIGURING ;
     }
-    
 }
 void HybridServo_Stop(HybridServo* servo) 
 {
-    uint8_t instance = 0 ; 
-    // Get the instance of my servo 
-    instance = HybridServo_GetInstanceID(servo);
-    // Set PWM to zero 
-    HAL_SetPWM(myHybridServo[instance].step_pin, 0.0f);
-    HAL_WritePin(myHybridServo[instance].dir_pin, 0);
-    myHybridServo[indexOfServo].servo_state = SERVO_STATE_STOP ;
+    uint8_t instance = HybridServo_GetInstanceID(servo);
+
+    if(instance != 0xff)
+    {
+        HAL_SetPWM(myHybridServo[instance].step_pin, 0.0f);
+        HAL_WritePin(myHybridServo[instance].dir_pin, 0);
+        myHybridServo[instance].servo_state = SERVO_STATE_STOP;
+    }
 }

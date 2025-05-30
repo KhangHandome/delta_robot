@@ -1,42 +1,49 @@
+#include "Hybrid_Servo.h"
+#include "hal_layer.h"
 #include <stdio.h>
-#include <unistd.h>     // for sleep()
-#include "hal_gpio.h"
-#include "hybrid_servo.h"
+#include <unistd.h> // for usleep
 
-int main(void) {
-    if (!HAL_Init()) {
-        printf("Không thể khởi tạo pigpio.\n");
-        return 1;
-    }
-
-    // Khởi tạo đối tượng servo: GPIO 18 là STEP, GPIO 23 là DIR, 2000 step/vòng
-    HybridServo my_servo = {
-        .step_pin = 18,
-        .dir_pin = 23,
-        .steps_per_rev = 2000
+int main() {
+    // Khởi tạo 2 servo
+    HybridServo servo1 = {
+        .index = 0,
+        .step_pin = 17,
+        .dir_pin = 27,
+        .speed = 0.5f,
+        .direction = Clockwise,
+        .servo_state = SERVO_STATE_UNINITIALIZED
     };
 
-    // Thiết lập GPIO output
-    HybridServo_Init(&my_servo);
+    HybridServo servo2 = {
+        .index = 1,
+        .step_pin = 22,
+        .dir_pin = 23,
+        .speed = 0.8f,
+        .direction = CounterClockwise,
+        .servo_state = SERVO_STATE_UNINITIALIZED
+    };
 
-    // --- Cấu hình ---
-    float rpm = 60.0f;      // Tốc độ quay (vòng/phút)
-    float rev = 2.0f;       // Số vòng cần quay
-    float duration_sec = (rev * 60.0f) / rpm;
+    // Gọi hàm Init để đăng ký 2 servo vào hệ thống
+    HybridServo_Init(&servo1);
+    HybridServo_Init(&servo2);
 
-    // Bắt đầu quay thuận
-    printf("Quay %0.1f vòng ở %0.1f RPM...\n", rev, rpm);
-    HybridServo_Rotate(&my_servo, rpm, true);  // true = chiều thuận
+    // Cấu hình thông số cho servo trước khi chạy
+    HybridServo_SetUp(&servo1);
+    HybridServo_SetUp(&servo2);
 
-    // Chờ đủ thời gian quay
-    usleep((int)(duration_sec * 1e6));  // chuyển giây -> micro giây
+    // Bắt đầu chạy servo
+    HybridServo_Running();
 
-    // Dừng lại
-    printf("Dừng.\n");
-    HybridServo_Stop(&my_servo);
+    // Cho servo chạy trong 3 giây
+    usleep(3000000); // 3,000,000 microseconds = 3 seconds
 
-    // Giải phóng thư viện pigpio
-    HAL_Deinit();
+    // Dừng cả 2 servo
+    HybridServo_Stop(&servo1);
+    HybridServo_Stop(&servo2);
+
+    // In trạng thái kết thúc
+    printf("Servo 1 state: %d\n", myHybridServo[0].servo_state);
+    printf("Servo 2 state: %d\n", myHybridServo[1].servo_state);
 
     return 0;
 }

@@ -19,7 +19,7 @@ typedef enum
     SERVO_STATE_CONFIGURING,   ///< Đang cấu hình thông số PWM, chiều quay,...
     SERVO_STATE_READY,         ///< Đã sẵn sàng hoạt động
     SERVO_STATE_ACTIVE,        ///< Đang điều khiển/gửi xung liên tục
-    SERVO_STATE_STOP          ///< Có lỗi xảy ra (nếu muốn mở rộng)
+    SERVO_STATE_STOP          ///<  Stop (nếu muốn mở rộng)
 } ServoState_t;
 /**
  * @brief Struct đại diện cho một động cơ Hybrid Servo.
