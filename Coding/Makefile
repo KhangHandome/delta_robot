@@ -1,71 +1,61 @@
-# ==========================
-# CONFIGURABLE VARIABLES
-# ==========================
+PROJECT_NAME := delta_robot
+PROJECT_DIR  := .
+SRC_DIRS     := 
+INC_DIRS     := 
+GCC          := gcc
+CCOPT        := -Wall -Wextra -O2
+OBJ_DIR      := obj
+OUTPUT_DIR   := bin
+# Linker option
+LDOPT        := -lgpiod   # Thêm thư viện gpiod khi link
 
-# Tên file thực thi
-TARGET = delta_robot.elf
+SRC_DIRS += ./Application_layer
+SRC_DIRS += ./Driver/src
+SRC_DIRS += ./Hal_layer/src
 
-# Trình biên dịch (sửa thành arm-none-eabi-gcc nếu dùng embedded)
-CC = gcc
+INC_DIRS += ./Driver/inc
+INC_DIRS += ./Hal_layer/inc
 
-# Cờ biên dịch
-CFLAGS = -Wall -Wextra -O2
+# Tìm tất cả file .c trong SRC_DIRS
+SRC_FILES := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.c))
+# Chuyển tên file .c thành obj/file.o
+OBJ_FILES := $(addprefix $(OBJ_DIR)/, $(notdir $(SRC_FILES:.c=.o)))
 
-# Các thư mục header
-INCLUDE_DIRS = \
-    Coding/Driver/inc \
-    Coding/Hal_layer/inc
+# Gắn cờ -I cho thư mục chứa .h
+INC_PARTS := $(foreach dir,$(INC_DIRS),-I$(dir))
 
-# Các thư mục chứa mã nguồn .c
-SRC_DIRS = \
-    Coding/Application_layer \
-    Coding/Driver/src \
-    Coding/Hal_layer/src
+# Cho Make biết file .c nằm ở đâu
+vpath %.c $(SRC_DIRS)
 
-# Thư mục build chứa các file .o
-BUILD_DIR = build
-
-# ==========================
-# INTERNAL VARIABLES
-# ==========================
-
-# Convert INCLUDE_DIRS to -I flags
-INCLUDES = $(addprefix -I, $(INCLUDE_DIRS))
-
-# Lấy danh sách tất cả các file .c
-SRC_FILES = $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.c))
-
-# Tạo danh sách các file .o tương ứng trong build/
-OBJ_FILES = $(patsubst %.c, $(BUILD_DIR)/%.o, $(SRC_FILES))
-
-# ==========================
-# RULES
-# ==========================
-
-# Mặc định khi gọi `make` là build
+# Mặc định
 all: build
 
-# Biên dịch toàn bộ
-build: $(TARGET)
+# Build đầy đủ (compile + link)
+build: $(OUTPUT_DIR)/$(PROJECT_NAME)
 
-# Link thành file .elf
-$(TARGET): $(OBJ_FILES)
-	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
+# Linker flags
+LDLIBS += -lgpiod -lpigpio -lrt -lpthread
 
-# Compile từng file .c thành .o và đưa vào thư mục build/
-$(BUILD_DIR)/%.o: %.c
-	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+# Link file .o thành file thực thi
+$(OUTPUT_DIR)/$(PROJECT_NAME): $(OBJ_FILES)
+	@mkdir -p $(OUTPUT_DIR)
+	$(GCC) $^ -o $@ $(LDLIBS)
 
-# Chạy chương trình (chỉ có ý nghĩa khi dùng gcc trên PC)
+
+# Compile từng file .c thành .o
+$(OBJ_DIR)/%.o: %.c
+	@mkdir -p $(OBJ_DIR)
+	$(GCC) $(CCOPT) $(INC_PARTS) -c $< -o $@
+
+# Chỉ compile
+compiler: $(OBJ_FILES)
+
+# Chạy chương trình
 run: build
-	./$(TARGET)
+	./$(OUTPUT_DIR)/$(PROJECT_NAME)
 
-# Xoá file build và file thực thi
+# Dọn sạch
 clean:
-	rm -rf $(BUILD_DIR) $(TARGET)
+	rm -rf $(OBJ_DIR) $(OUTPUT_DIR)
 
-# ==========================
-# PHONY
-# ==========================
-.PHONY: all build clean run
+.PHONY: all build compiler run clean

@@ -19,7 +19,7 @@ int main() {
         .step_pin = 22,
         .dir_pin = 23,
         .speed = 0.8f,
-        .direction = CounterClockwise,
+        .direction = Counterclockwise,
         .servo_state = SERVO_STATE_UNINITIALIZED
     };
 
@@ -42,8 +42,8 @@ int main() {
     HybridServo_Stop(&servo2);
 
     // In trạng thái kết thúc
-    printf("Servo 1 state: %d\n", myHybridServo[0].servo_state);
-    printf("Servo 2 state: %d\n", myHybridServo[1].servo_state);
+    printf("Servo 1 state: %d\n", servo1.servo_state);
+    printf("Servo 2 state: %d\n", servo2.servo_state);
 
     return 0;
 }

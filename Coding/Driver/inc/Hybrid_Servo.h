@@ -2,6 +2,7 @@
 #define _HYBRID_SERVO_H_
 
 #include <stdbool.h>
+#include <stdint.h>
 // Drive support 4 step motor in runtime 
 #define MAX_SERVO_INSTANCE 4
 typedef enum
@@ -47,7 +48,7 @@ extern void HybridServo_Init(HybridServo* servo);
  * @param[in] rpm Tốc độ vòng/phút.
  * @param[in] dir true = chiều thuận, false = ngược.
  */
-extern void HybridServo_SetUp(HybridServo* servo, float rpm, bool dir);
+extern void HybridServo_SetUp(HybridServo* servo);
 
 /**
  * @brief Running servo 
