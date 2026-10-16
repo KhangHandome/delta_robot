@@ -1,0 +1,102 @@
+## Hướng dẫn sử dụng driver EEPROM AT24C256
+
+Driver này dùng I2C của STM32 HAL để đọc và ghi EEPROM AT24C256 (32 KB), với
+địa chỉ thiết bị HAL `0xA0`, địa chỉ bộ nhớ 16-bit và kích thước trang ghi 64 byte.
+
+## Kết nối phần cứng
+
+- Nối SCL/SDA của EEPROM với chân I2C tương ứng trên vi điều khiển. Cấu hình hiện
+  tại dùng I2C1: PB6 là SCL và PB7 là SDA.
+- Nối chung GND, cấp nguồn đúng theo module EEPROM.
+- Đảm bảo bus SDA/SCL có điện trở kéo lên phù hợp. Nếu module có chân A0-A2,
+  cấu hình địa chỉ phần cứng đúng với `AT24C_ADDRESS` trong
+  `Core/Inc/drv_eeprom_at24c.h`.
+
+## Khởi tạo
+
+Khởi tạo ngoại vi I2C trước, sau đó truyền handle I2C vào driver:
+
+```c
+#include "i2c.h"
+#include "drv_eeprom_at24c.h"
+
+MX_I2C1_Init();
+
+if (drv_eeprom_at24c_init(&hi2c1) != HAL_OK)
+{
+    Error_Handler();
+}
+```
+
+Trong project này, `main.c` đã gọi `MX_I2C1_Init()` và khởi tạo driver với
+`&hi2c1`. Hãy gọi các hàm đọc/ghi sau khi khởi tạo thành công.
+
+## Ghi dữ liệu
+
+```c
+uint8_t tx_data[] = {0x12, 0x34, 0x56};
+
+if (drv_eeprom_at24c_write(0x0010, tx_data, sizeof(tx_data)) != HAL_OK)
+{
+    Error_Handler();
+}
+```
+
+Driver dùng `HAL_I2C_Mem_Write()` và tự chia dữ liệu tại ranh giới trang 64 byte.
+Sau mỗi lần ghi trang, driver chờ EEPROM sẵn sàng trước khi tiếp tục. Không cần
+tự ghép hai byte địa chỉ bộ nhớ vào buffer dữ liệu.
+
+## Đọc dữ liệu
+
+```c
+uint8_t rx_data[sizeof(tx_data)];
+
+if (drv_eeprom_at24c_read(0x0010, rx_data, sizeof(rx_data)) != HAL_OK)
+{
+    Error_Handler();
+}
+```
+
+Hàm đọc dùng `HAL_I2C_Mem_Read()` với địa chỉ bộ nhớ 16-bit. Địa chỉ bắt đầu và
+độ dài được tăng tự động khi đọc vùng dữ liệu dài.
+
+## Xóa và kiểm tra vùng nhớ
+
+EEPROM không có lệnh xóa riêng. `drv_eeprom_at24c_erase()` ghi giá trị `0xFF`
+vào vùng chỉ định:
+
+```c
+if (drv_eeprom_at24c_erase(0x0010, 64) != HAL_OK)
+{
+    Error_Handler();
+}
+```
+
+`drv_eeprom_at24c_blankcheck()` kiểm tra vùng nhớ có toàn byte `0xFF` hay không.
+Hàm trả về trạng thái HAL; kết quả kiểm tra được ghi qua `is_blank`:
+
+```c
+uint8_t is_blank;
+
+if (drv_eeprom_at24c_blankcheck(0x0010, 64, &is_blank) != HAL_OK)
+{
+    Error_Handler();
+}
+
+if (is_blank == TRUE)
+{
+    /* Vùng nhớ toàn 0xFF */
+}
+```
+
+## Giới hạn và lưu ý
+
+- Địa chỉ hợp lệ từ `0x0000` đến `0x7FFF`; tổng vùng nhớ là 32 KB. Địa chỉ bắt
+  đầu cộng độ dài không được vượt quá `0x8000`.
+- `AT24C_ADDRESS` là dạng địa chỉ đã dịch trái một bit mà STM32 HAL yêu cầu.
+  Không tự cộng bit đọc/ghi vào địa chỉ này khi gọi driver.
+- Các hàm trả về `HAL_OK` khi thành công; các lỗi I2C và tham số không hợp lệ
+  được trả về cho ứng dụng xử lý.
+- Đảm bảo mã EEPROM thực tế hỗ trợ dung lượng, kích thước trang 64 byte và địa
+  chỉ thiết bị đang cấu hình. Một số thành viên AT24C khác có kích thước trang
+  hoặc dung lượng khác.
