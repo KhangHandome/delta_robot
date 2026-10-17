@@ -14,7 +14,6 @@ static HAL_StatusTypeDef validate_range(eeprom_at24c_address start_address, uint
     return HAL_OK;
 }
 
-
 HAL_StatusTypeDef drv_eeprom_at24c_init(I2C_HandleTypeDef *i2c_instance)
 {
     if (i2c_instance == NULL)

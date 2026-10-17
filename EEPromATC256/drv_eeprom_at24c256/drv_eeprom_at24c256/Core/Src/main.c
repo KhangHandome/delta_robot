@@ -68,6 +68,21 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
+	uint8_t dataRead[1024] = {0};
+	uint16_t address = 0x00;
+	uint8_t dataWrite[] =
+    "Study about Robot Delta and the EEPROM module. "
+    "This message is longer than one EEPROM page and is used to test "
+    "writing multiple bytes across page boundaries. "
+    "The Delta robot uses three arms to move the end effector in three "
+    "dimensional space. Each motor changes the position of one arm, "
+    "and the controller calculates the required movement. "
+    "The EEPROM stores configuration values, calibration data, and "
+    "test messages so they can be read again after the system restarts. "
+    "Please verify that every byte written to the AT24C256 can be read "
+    "back correctly, including spaces and punctuation. "
+    "End of EEPROM test message.";
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -93,6 +108,25 @@ int main(void)
   if (drv_eeprom_at24c_init(&hi2c1) != HAL_OK)
   {
     Error_Handler();
+  }
+
+  for ( address = 0 ; address < MAX_ADDRESS - 1024 ; address += 1024 )
+  {
+	  drv_eeprom_at24c_erase(address, sizeof(dataWrite));
+	  drv_eeprom_at24c_write(address, dataWrite, sizeof(dataWrite));
+	  for ( int i = 0 ; i < sizeof(dataRead) ; i ++)
+	  {
+		  dataRead[i] = 0 ;
+	  }
+	  drv_eeprom_at24c_read(address, dataRead, sizeof(dataWrite));
+	  address += 1024 ;
+	  for ( int i = 0 ; i < sizeof(dataWrite) ; i ++)
+	  {
+		  if ( dataWrite[i] != dataRead[i])
+		  {
+			  while(1);
+		  }
+	  }
   }
   /* USER CODE END 2 */
 
